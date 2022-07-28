@@ -88,12 +88,12 @@ def main(args):
             for i in range(10):
                 img, _ = dataset_test[i]
                 prediction = model([img.to(device)])
-                originals.append(wandb.Image(Image.fromarray(img.mul(255).permute(1, 2, 0).byte().numpy())))
-                predictions.append(wandb.Image(Image.fromarray(prediction[0]['masks'][0, 0].mul(255).byte().cpu().numpy())))
+                originals.append(wandb.Image(img))
+                predictions.append(wandb.Image(prediction[0]['masks'][0, 0]))
         wandb.log({"Val Predictions": predictions, "Val Images": originals})
 
 if __name__ == "__main__":
     args = combined_parser()
     
-    wandb.init(project="ped_detection", config=dict(args))
+    wandb.init(project="ped_detection0", config=dict(args))
     main(args)
