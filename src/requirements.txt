@@ -1,0 +1,5 @@
+cython
+pycocotools
+matplotlib
+addict
+wandb
