@@ -15,7 +15,7 @@
 
 ## Useful Notes
 
-- `utils/config_utils.py` has a parser that merges CLI, JSON and SageMaker Environment configuration options. It uses [addict](https://github.com/mewwts/addict) to provide dot syntax.
+- `utils/config_utils.py` has a parser that merges CLI, JSON and SageMaker Environment configuration options. It uses [addict](https://github.com/mewwts/addict) to provide dot syntax. Note: CLI doesn't override JSON currently, will fix this.
 - Searching for "# W&B" without the quotes at the repo level in your favorite IDE will identify every line modified for use with W&B
 
 ## Future Work
