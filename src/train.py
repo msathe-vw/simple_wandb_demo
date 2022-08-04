@@ -102,9 +102,9 @@ def main(args):
         wandb.log({"Val Predictions": predictions, "Val Images": originals})
     
     # W&B log last model    
-    art = wandb.Artifact(f'maskrcnn--{wandb.run.id}', type="model")
+    art = wandb.Artifact(f'maskrcnn-{wandb.run.id}', type="model")
     art.add_file(save_path, save_path.split('/')[-1])
-
+    wandb.log_artifact(art)
 if __name__ == "__main__":
     args = combined_parser()
     # W&B initialise here
