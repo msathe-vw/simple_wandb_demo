@@ -45,7 +45,8 @@ def train_one_epoch(model, optimizer, scheduler, data_loader, device, epoch, pri
 
         if lr_scheduler is not None:
             lr_scheduler.step()
-
+        
+        # W&B Logs losses and learning rate
         wandb.log({"loss": losses_reduced, **loss_dict_reduced, "lr" : optimizer.param_groups[0]["lr"]})
 
 

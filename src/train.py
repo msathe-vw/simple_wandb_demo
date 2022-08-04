@@ -23,6 +23,9 @@ def get_transform(train):
     return T.Compose(transforms)
 
 def main(args):
+    # W&B Log the training dataset as an artifact here
+    wandb.log_artifact(args.train, name='PennFudan', type='pedestrian_dataset')
+
     # use our dataset and defined transformations
     dataset = PennFudanDataset(args.train, get_transform(train=True))
     dataset_test = PennFudanDataset(args.train, get_transform(train=False))
@@ -50,7 +53,8 @@ def main(args):
     model = get_mask_rcnn(num_classes)
     # move model to the right device
     model.to(device)
-    wandb.watch(model, log_freq=1)
+    # W&B Watches model and logs model topology, gradients, and/or params.
+    wandb.watch(model, log_freq=50, log_graph=True)
     # construct an optimizer
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=0.005,
@@ -60,23 +64,27 @@ def main(args):
     # 10x every 3 epochs
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.lr_steps, gamma=args.lr_gamma)
 
-    if args.resume:
-        checkpoint = torch.load(args.resume, map_location='cpu')
+
+    # W&B Resume functionality currently doesn't work
+    if wandb.run.resumed:
+        checkpoint = torch.load(wandb.restore(args.checkpoint), map_location='cpu')
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         args.start_epoch = checkpoint['epoch'] + 1
-
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
 
     for epoch in range(args.start_epoch, args.epochs):
         train_one_epoch(model, optimizer, lr_scheduler, data_loader, device, epoch, args.print_freq)
         if args.output_dir:
+            save_path = os.path.join(args.output_dir, 'model_{}.pth'.format(epoch))
             utils.save_on_master({
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'lr_scheduler': lr_scheduler.state_dict(),
                 'epoch': epoch},
-                os.path.join(args.output_dir, 'model_{}.pth'.format(epoch)))
+                save_path)
 
         # evaluate after every epoch
         evaluate(model, data_loader_test, device=device)
@@ -88,12 +96,17 @@ def main(args):
             for i in range(10):
                 img, _ = dataset_test[i]
                 prediction = model([img.to(device)])
+                # W&B can handle Numpy, Torch, or TF tensors as images easily
                 originals.append(wandb.Image(img))
                 predictions.append(wandb.Image(prediction[0]['masks'][0, 0]))
         wandb.log({"Val Predictions": predictions, "Val Images": originals})
+    
+    # W&B log last model    
+    art = wandb.Artifact(f'maskrcnn--{wandb.run.id}', type="model")
+    art.add_file(save_path, save_path.split('/')[-1])
 
 if __name__ == "__main__":
     args = combined_parser()
-    
+    # W&B initialise here
     wandb.init(project="ped_detection0", config=dict(args))
     main(args)
